@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/cache
+        http://www.springframework.org/schema/cache/spring-cache.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+    <context:annotation-config/>
+    <context:component-scan base-package="io.atwork"/>
+    <context:property-placeholder location="classpath*:*.properties" ignore-unresolvable="true"/>
+
+    <cache:annotation-driven/>
+    <!--<bean id="cacheManager" class="org.springframework.cache.guava.GuavaCacheManager"/>-->
+    <bean id="cacheManager" class="org.springframework.data.redis.cache.RedisCacheManager" c:template-ref="redisTemplate">
+        <property name="usePrefix" value="true"/>
+    </bean>
+
+    <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+          p:host-name="${redis.host}"
+          p:port="${redis.port}"
+          p:password="${redis.password}"
+          p:use-pool="${redis.use-pool}"
+          p:database="${redis.database}"/>
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate" p:connection-factory-ref="jedisConnectionFactory">
+    </bean>
+
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+        <!-- 基本属性 url、user、password -->
+        <property name="driverClassName" value="${jdbc.driverClassName}"/>
+        <property name="url" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+
+        <!-- 配置初始化大小、最小、最大 -->
+        <property name="initialSize" value="5" />
+        <property name="minIdle" value="5" />
+        <property name="maxActive" value="50" />
+
+        <!-- 配置获取连接等待超时的时间 -->
+        <property name="maxWait" value="60000" />
+
+        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+        <property name="timeBetweenEvictionRunsMillis" value="60000" />
+
+        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+        <property name="minEvictableIdleTimeMillis" value="300000" />
+
+        <property name="validationQuery" value="SELECT 'x'" />
+        <property name="testWhileIdle" value="true" />
+        <property name="testOnBorrow" value="false" />
+        <property name="testOnReturn" value="false" />
+
+        <!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+        <property name="poolPreparedStatements" value="false" />
+        <property name="maxPoolPreparedStatementPerConnectionSize" value="20" />
+
+        <!-- 配置监控统计拦截的filters -->
+        <!--<property name="filters" value="stat" />-->
+    </bean>
+
+    <!--<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource"-->
+          <!--destroy-method="close">-->
+        <!--<property name="driverClassName" value="${jdbc.driverClassName}"/>-->
+        <!--<property name="url" value="${jdbc.url}"/>-->
+        <!--<property name="username" value="${jdbc.username}"/>-->
+        <!--<property name="password" value="${jdbc.password}"/>-->
+    <!--</bean>-->
+
+    <bean id="sessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="packagesToScan">
+            <list>
+                <value>io.atwork.organization.domain</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+                <prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+                <prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="txManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+
+    <tx:annotation-driven transaction-manager="txManager"/>
+
+    <bean id="repository" class="org.dayatang.persistence.hibernate.EntityRepositoryHibernate">
+        <constructor-arg ref="sessionFactory"/>
+    </bean>
+
+    <bean id="queryChannel" class="org.dayatang.querychannel.impl.QueryChannelServiceImpl">
+        <constructor-arg name="repository" ref="repository"/>
+    </bean>
+
+    <bean id="orgCacheQueryHelper" class="io.atwork.organization.engine.OrgCacheQueryHelper">
+        <constructor-arg index="0" ref="queryChannel"/>
+    </bean>
+    <bean id="orgConfig" class="io.atwork.organization.engine.OrgConfig"/>
+    <bean id="orgLockHelper" class="io.atwork.organization.engine.OrgLockHelper">
+        <constructor-arg index="0" ref="orgConfig"/>
+    </bean>
+    <bean id="orgCacheEvictHelper" class="io.atwork.organization.engine.OrgCacheEvictHelper"/>
+    <bean id="orgQueryService" class="io.atwork.organization.engine.OrgQueryServiceImpl">
+        <constructor-arg index="0" ref="queryChannel"/>
+        <constructor-arg index="1" ref="orgCacheQueryHelper"/>
+    </bean>
+    <bean id="contactService" class="io.atwork.organization.engine.ContactServiceImpl">
+        <constructor-arg index="0" ref="queryChannel"/>
+        <constructor-arg index="1" ref="orgQueryService"/>
+        <constructor-arg index="2" ref="orgCacheQueryHelper"/>
+    </bean>
+    <bean id="platformDiscussionListener" class="io.atwork.organization.usercenter.PlatformDiscussionListener">
+        <constructor-arg index="0" ref="platformDiscussionProvider"/>
+    </bean>
+    <bean id="cacheOpsListener" class="io.atwork.organization.spi.builtins.CacheOpsListener"/>
+    <bean id="orgOpsListener" class="io.atwork.organization.spi.builtins.OrgOpsListener"/>
+    <bean id="orgOpsService" class="io.atwork.organization.engine.OrgOpsServiceImpl">
+        <constructor-arg index="0" ref="orgCacheQueryHelper"/>
+        <constructor-arg index="1" ref="orgLockHelper"/>
+        <property name="orgListener">
+            <bean class="io.atwork.organization.spi.builtins.OrgListenerStream">
+                <constructor-arg index="0">
+                    <list>
+                        <ref bean="platformDiscussionListener"/>
+                        <ref bean="orgOpsListener"/>
+                        <ref bean="cacheOpsListener"/>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+        <property name="positionListener">
+            <bean class="io.atwork.organization.spi.builtins.PositionListenerStream">
+                <constructor-arg index="0">
+                    <list>
+                        <ref bean="platformDiscussionListener"/>
+                        <ref bean="orgOpsListener"/>
+                        <ref bean="cacheOpsListener"/>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+        <property name="employeeListener">
+            <bean class="io.atwork.organization.spi.builtins.EmployeeListenerStream">
+                <constructor-arg index="0">
+                    <list>
+                        <bean class="io.atwork.organization.usercenter.PlatformUserListener">
+                            <constructor-arg index="0" ref="platformUserProvider"/>
+                        </bean>
+                        <bean class="io.atwork.organization.spi.builtins.EmployeeOpsListener">
+                            <constructor-arg index="0" ref="taskService"/>
+                        </bean>
+                        <ref bean="cacheOpsListener"/>
+                        <bean class="io.atwork.organization.appmarket.AppScopeListener">
+                            <constructor-arg index="0" ref="appService"/>
+                        </bean>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+    <bean id="employeeResetService" class="io.atwork.organization.engine.EmployeeResetServiceImpl">
+        <constructor-arg index="0" ref="orgOpsService"/>
+        <constructor-arg index="1" ref="orgQueryService"/>
+    </bean>
+    <!--provider-->
+    <bean id="platformDiscussionProvider" class="io.atwork.organization.usercenter.PlatformDiscussionProvider">
+        <constructor-arg index="0" ref="platformDiscussionService"/>
+    </bean>
+    <bean id="platformUserProvider" class="io.atwork.organization.usercenter.PlatformUserProvider">
+        <constructor-arg index="0" ref="platformUserService"/>
+    </bean>
+
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>
