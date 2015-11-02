@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+	   http://www.springframework.org/schema/tx
+	   http://www.springframework.org/schema/tx/spring-tx.xsd
+	   http://www.springframework.org/schema/context
+	   http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+    <context:property-placeholder location="classpath*:*.properties" ignore-unresolvable="true"/>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <aop:aspectj-autoproxy/>
+
+    <bean id="em" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="packagesToScan" value="io.atwork.appmarket.domain"/>
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+                <property name="database" value="${jdbc.dialect}"/>
+                <property name="showSql" value="${jdbc.showSql}"/>
+            </bean>
+        </property>
+
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.hbm2ddl.auto">${jdbc.ddl}</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="em"/>
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
+        <property name="driverClass" value="${jdbc.driver}"/>
+        <property name="jdbcUrl" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+
+    <bean id="appQueryService" class="io.atwork.appmarket.engine.AppQueryServiceImpl"/>
+    <bean id="appService" class="io.atwork.appmarket.engine.AppServiceImpl">
+        <constructor-arg index="0" ref="appOps"/>
+        <constructor-arg index="1" ref="bundleOps"/>
+        <constructor-arg index="2" ref="categoryOps"/>
+        <constructor-arg index="3" ref="followshipOps"/>
+    </bean>
+
+    <bean id="bundleQueryService" class="io.atwork.appmarket.engine.BundleQueryServiceImpl"/>
+    <bean id="bundleService" class="io.atwork.appmarket.engine.BundleServiceImpl">
+        <constructor-arg index="0" ref="appOps"/>
+        <constructor-arg index="1" ref="bundleOps"/>
+    </bean>
+
+    <bean id="categoryQueryService" class="io.atwork.appmarket.engine.CategoryQueryServiceImpl"/>
+    <bean id="categoryService" class="io.atwork.appmarket.engine.CategoryServiceImpl">
+        <constructor-arg index="0" ref="categoryOps"/>
+    </bean>
+
+    <bean id="followshipQueryService" class="io.atwork.appmarket.engine.FollowshipQueryServiceImpl" />
+    <bean id="followshipService" class="io.atwork.appmarket.engine.FollowshipServiceImpl">
+        <constructor-arg index="0" ref="appOps"/>
+        <constructor-arg index="1" ref="followshipOps"/>
+    </bean>
+
+
+    <bean id="appOps" class="io.atwork.appmarket.impl.JpaAppOperations"/>
+    <bean id="followshipOps" class="io.atwork.appmarket.impl.JpaFollowshipOperations"/>
+    <bean id="bundleOps" class="io.atwork.appmarket.impl.JpaBundleOperations"/>
+    <bean id="categoryOps" class="io.atwork.appmarket.impl.JpaCategoryOperations"/>
+
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>
