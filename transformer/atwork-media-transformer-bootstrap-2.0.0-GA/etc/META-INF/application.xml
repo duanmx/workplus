@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/data/mongo
+       http://www.springframework.org/schema/data/mongo/spring-mongo.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <bean id="transcodeService" class="io.atwork.media.transformer.engine.MediaTransformerServiceImpl">
+        <constructor-arg index="0" ref="mediaService"/>
+        <constructor-arg index="1" ref="mediaTransformerOperations"/>
+    </bean>
+
+    <bean id="mediaService" class="io.atworkplatform.mediastorage.engine.MediaServiceImpl">
+        <constructor-arg index="0" ref="mediaOps"/>
+    </bean>
+
+    <bean id="mediaOps" class="io.atworkplatform.mediastorage.impl.GridFsMediaOperations">
+        <constructor-arg index="0" ref="gridFsOps"/>
+    </bean>
+
+    <bean id="gridFsOps" class="org.springframework.data.mongodb.gridfs.GridFsTemplate">
+        <constructor-arg ref="mongoFactory"/>
+        <constructor-arg ref="mongoConverter"/>
+    </bean>
+
+    <!--mongo-->
+    <bean id="mongoOps" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg ref="mongoFactory"/>
+    </bean>
+
+    <bean id="mediaTransformerOperations" class="io.atwork.media.transformer.mongodb.MongoMediaTransformerOperations">
+        <constructor-arg ref="mongoOps"/>
+    </bean>
+
+    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" write-concern="SAFE">
+        <mongo:options connections-per-host="${mongodb.options.connectionPerHost}"
+                       connect-timeout="${mongodb.options.connectionTimeout}"/>
+    </mongo:mongo>
+    <mongo:db-factory id="mongoFactory" mongo-ref="mongo" dbname="${mongodb.dbname}"
+                      username="${mongodb.username}" password="${mongodb.password}"/>
+    <mongo:mapping-converter id="mongoConverter" db-factory-ref="mongoFactory"/>
+
+    <import resource="application-dubbo.xml"/>
+</beans>

@@ -1,0 +1,17 @@
+export ZK_HOST=172.16.1.246
+export ZK_PORT=2181
+
+export MONGO_HOST=172.16.1.248
+export MONGO_PORT=27017
+export MONGO_USER=
+export MONGO_PASS=
+
+export MYSQL_HOST=172.16.1.248
+export MYSQL_PORT=3306
+export MYSQL_USER=eim
+export MYSQL_PASS=eim@wsx123
+
+export REDIS_HOST=172.16.1.248
+export REDIS_PORT=6379
+
+

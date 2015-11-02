@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+            http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <bean id="terminalService" class="io.atworkplatform.terminalcenter.engine.TerminalServiceImpl" >
+        <constructor-arg index="0" ref="terminalOperations" />
+        <property name="terminalListener" ref="terminalListener" />
+    </bean>
+
+    <bean id="terminalOperations" class="io.atworkplatform.terminalcenter.impl.mongodb.MongoTerminalOperations" >
+        <constructor-arg index="0" ref="mongoTemplate" />
+    </bean>
+
+    <bean id="terminalListener" class="io.atworkplatform.terminalcenter.spi.event.TerminalListenerStream">
+        <constructor-arg index="0">
+            <list>
+                <bean class="io.atworkplatform.terminalcenter.spi.builtins.TerminalAccessListener" >
+                    <constructor-arg index="0" ref="taskService" />
+                    <constructor-arg index="1" ref="terminalService" />
+                </bean>
+                <bean class="io.atworkplatform.terminalcenter.spi.builtins.TerminalQuiesceListener" >
+                    <constructor-arg index="0" ref="taskService" />
+                    <constructor-arg index="1" ref="terminalService" />
+                </bean>
+            </list>
+        </constructor-arg>
+    </bean>
+
+	<!-- mongo -->
+    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" write-concern="${mongodb.write-concern}">
+        <mongo:options connections-per-host="${mongodb.options.connectionPerHost}"
+                       connect-timeout="${mongodb.options.connectionTimeout}" />
+    </mongo:mongo>
+    <mongo:db-factory id="mongoFactory" mongo-ref="mongo" dbname="${mongodb.dbname}"
+                      username="${mongodb.username}" password="${mongodb.password}"/>
+    <mongo:mapping-converter id="mongoConverter" db-factory-ref="mongoFactory" />
+    
+    <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="mongoFactory" index="0"/>
+		<constructor-arg ref="mongoConverter" index="1"/>
+	</bean>
+</beans>

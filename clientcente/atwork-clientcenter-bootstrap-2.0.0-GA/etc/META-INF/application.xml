@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/cache
+        http://www.springframework.org/schema/cache/spring-cache.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+    <context:component-scan base-package="io.atwork.clientcenter"/>
+    <context:property-placeholder location="classpath*:*.properties" ignore-unresolvable="true"/>
+
+    <cache:annotation-driven/>
+    <bean id="cacheManager" class="org.springframework.cache.guava.GuavaCacheManager"/>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource"
+          destroy-method="close">
+        <property name="driverClassName" value="${app.jdbc.driverClassName}"/>
+        <property name="url" value="${app.jdbc.url}"/>
+        <property name="username" value="${app.jdbc.username}"/>
+        <property name="password" value="${app.jdbc.password}"/>
+    </bean>
+
+    <bean id="sessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="packagesToScan">
+            <list>
+                <value>io.atwork.clientcenter.domain</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">${app.hibernate.dialect}</prop>
+                <prop key="hibernate.hbm2ddl.auto">${app.hibernate.hbm2ddl.auto}</prop>
+                <prop key="hibernate.show_sql">${app.hibernate.show_sql}</prop>
+                <prop key="hibernate.format_sql">${app.hibernate.format_sql}</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="txManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+
+
+    <tx:annotation-driven transaction-manager="txManager"/>
+
+    <bean id="repository" class="org.dayatang.persistence.hibernate.EntityRepositoryHibernate">
+        <constructor-arg ref="sessionFactory"/>
+    </bean>
+
+    <bean id="queryChannel" class="org.dayatang.querychannel.impl.QueryChannelServiceImpl">
+        <constructor-arg name="repository" ref="repository"/>
+    </bean>
+
+    <bean id="feedbackService" class="io.atwork.clientcenter.engine.FeedbackServiceImpl">
+        <constructor-arg index="0" ref="queryChannel"/>
+    </bean>
+
+    <bean id="releaseService" class="io.atwork.clientcenter.engine.ReleaseServiceImpl">
+        <constructor-arg index="0" ref="queryChannel"/>
+    </bean>
+
+    <bean id="logService" class="io.atwork.clientcenter.engine.LogServiceImpl"></bean>
+
+    <bean id="captchaService" class="io.atwork.clientcenter.notify.engine.CaptchaServiceImpl">
+        <property name="captchaListener">
+            <bean class="io.atwork.clientcenter.notify.spi.event.CaptchaEventStream">
+                <constructor-arg index="0">
+                    <list>
+                        <bean class="io.atwork.clientcenter.notify.spi.builtins.SendCaptchaListener">
+                            <constructor-arg index="0" ref="notifyService"/>
+                        </bean>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="notifyService" class="io.atwork.clientcenter.notify.engine.NotifyServiceImpl">
+        <property name="clientNotifies">
+            <list>
+                <bean class="io.atwork.clientcenter.notify.spi.EMailNotifyHandler">
+                    <constructor-arg index="0" ref="mailSender"/>
+                    <constructor-arg index="1" ref="apiConfig"/>
+                </bean>
+                <bean class="io.atwork.clientcenter.notify.spi.tju.TJUSMSNotifyHandler">
+                    <constructor-arg index="0" ref="apiConfig"/>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="apiConfig" class="io.atwork.clientcenter.notify.spi.ApiConfig"/>
+
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="${email.host}"/>
+        <property name="port" value="${email.port}"/>
+        <property name="username" value="${email.username}"/>
+        <property name="password" value="${email.password}"/>
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.smtp.timeout">25000</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>

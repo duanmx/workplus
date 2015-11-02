@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+       xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/data/mongo
+       http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+       http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <bean id="discoveryService" class="io.atworkplatform.sessioncenter.discovery.zookeeper.ZooDiscoveryService"
+          init-method="start"
+          destroy-method="stop">
+        <constructor-arg index="0" value="${registry.namespace}"/>
+        <constructor-arg index="1" value="${registry.zkservers}"/>
+    </bean>
+
+    <bean id="apiConfig" class="io.atworkapi.domain.ApiConfig">
+    </bean>
+
+    <bean id="mediaService" class="io.atworkplatform.mediastorage.engine.MediaServiceImpl">
+        <constructor-arg index="0" ref="mediaOps"/>
+    </bean>
+
+    <bean id="mediaOps" class="io.atworkplatform.mediastorage.impl.GridFsMediaOperations">
+        <constructor-arg index="0" ref="gridFsOps"/>
+    </bean>
+
+    <bean id="gridFsOps" class="org.springframework.data.mongodb.gridfs.GridFsTemplate">
+        <constructor-arg ref="mongoFactory"/>
+        <constructor-arg ref="mongoConverter"/>
+    </bean>
+
+    <!--mongo-->
+    <bean id="mongoOps" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg ref="mongoFactory"/>
+    </bean>
+
+    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" write-concern="SAFE">
+        <mongo:options connections-per-host="${mongodb.options.connectionPerHost}"
+                       connect-timeout="${mongodb.options.connectionTimeout}"/>
+    </mongo:mongo>
+    <mongo:db-factory id="mongoFactory" mongo-ref="mongo" dbname="${mongodb.dbname}"
+                      username="${mongodb.username}" password="${mongodb.password}"/>
+    <mongo:mapping-converter id="mongoConverter" db-factory-ref="mongoFactory"/>
+
+    <bean id="tokenFilter" class="io.atworkapi.gateway.filter.ApiTokenFilter">
+        <constructor-arg index="0" ref="tokenService"/>
+        <property name="exclusivePaths">
+            <list>
+                <value>/token/temporary*</value>
+                <value>/token*</value>
+                <value>/rls/win/upgrade*</value>
+                <value>/rls/win/check*</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="scopeFilter" class="io.atworkapi.gateway.filter.ApiScopeFilter">
+        <property name="exclusivePaths">
+            <list>
+                <value>/token/temporary*</value>
+                <value>/token*</value>
+                <value>/rls/win/upgrade*</value>
+                <value>/rls/win/check*</value>
+            </list>
+        </property>
+        <property name="scopeDefinitions">
+            <value>
+                /tenant* = all
+                /tenant/** = all
+                /app* = all
+                /app/** all, app
+                /user** = user
+                /endpoint* = user
+                /media** = all, app, user
+            </value>
+        </property>
+    </bean>
+
+    <bean id="resultFilter" class="io.atworkapi.gateway.filter.ApiResultFilter"/>
+    <bean id="jsonProvider" class="io.atworkapi.gateway.provider.ApiJsonProvider"/>
+    <bean id="exceptionMapper" class="io.atworkapi.gateway.provider.ApiExceptionMapper"/>
+
+    <jaxrs:server address="/">
+        <jaxrs:providers>
+            <ref bean="tokenFilter"/>
+            <ref bean="scopeFilter"/>
+            <ref bean="resultFilter"/>
+            <ref bean="jsonProvider"/>
+            <ref bean="exceptionMapper"/>
+        </jaxrs:providers>
+
+        <jaxrs:serviceBeans>
+            <bean class="io.atworkapi.gateway.TokenResource">
+                <constructor-arg index="0" ref="tokenService"/>
+                <constructor-arg index="1">
+                    <list>
+                        <bean class="io.atworkapi.usercenter.approver.UserApprover">
+                            <constructor-arg index="0" ref="userService"/>
+                        </bean>
+                        <bean class="io.atworkapi.appmarket.approver.AppApprover">
+                            <constructor-arg index="0" ref="appService"/>
+                        </bean>
+                        <bean class="io.atworkapi.tenantcenter.approver.TenantAdminApprover">
+                            <constructor-arg index="0" ref="tenantAdminService"/>
+                        </bean>
+                    </list>
+                </constructor-arg>
+                <property name="logService" ref="logService"/>
+            </bean>
+
+            <bean class="io.atworkapi.gateway.TicketResource">
+                <constructor-arg index="0" ref="ticketService"/>
+            </bean>
+
+            <bean class="io.atworkapi.gateway.EndpointResource">
+                <constructor-arg index="0" ref="deviceService"/>
+                <constructor-arg index="1" ref="discoveryService"/>
+            </bean>
+
+            <!-- usercenter -->
+            <bean class="io.atworkapi.usercenter.DeviceResource">
+                <constructor-arg index="0" ref="deviceService"/>
+            </bean>
+            <bean class="io.atworkapi.usercenter.DiscussionResource">
+                <constructor-arg index="0" ref="discussionService"/>
+            </bean>
+            <bean class="io.atworkapi.usercenter.UserResource">
+                <constructor-arg index="0" ref="userService"/>
+                <constructor-arg index="1" ref="captchaService"/>
+                <property name="notifyService" ref="notifyService"/>
+            </bean>
+            <bean class="io.atworkapi.usercenter.UserDeviceResource">
+                <constructor-arg index="0" ref="deviceService"/>
+            </bean>
+            <bean class="io.atworkapi.usercenter.UserDiscussionResource">
+                <constructor-arg index="0" ref="discussionService"/>
+            </bean>
+            <bean class="io.atworkapi.usercenter.UserMboxResource">
+                <constructor-arg index="0" ref="discussionService"/>
+                <constructor-arg index="1" ref="messageQueryService"/>
+            </bean>
+            <bean class="io.atworkapi.usercenter.UserConversationResource">
+                <constructor-arg index="0" ref="userConversationService"/>
+            </bean>
+
+            <!-- tenantcenter -->
+            <bean class="io.atworkapi.tenantcenter.TenantResource">
+                <constructor-arg index="0" ref="tenantService"/>
+                <constructor-arg index="1" ref="tenantAdminService"/>
+            </bean>
+            <bean class="io.atworkapi.tenantcenter.TenantUserResource">
+                <constructor-arg index="0" ref="userService"/>
+            </bean>
+            <bean class="io.atworkapi.tenantcenter.TenantDiscussionResource">
+                <constructor-arg index="0" ref="discussionService"/>
+            </bean>
+
+            <!-- media -->
+            <bean class="io.atworkapi.media.MediaResource">
+                <constructor-arg index="0" ref="mediaService"/>
+                <constructor-arg index="1" ref="mediaTransformerService"/>
+            </bean>
+
+            <!-- appmarket -->
+            <bean class="io.atworkapi.appmarket.UserAppResource">
+                <constructor-arg index="0" ref="appQueryService"/>
+                <constructor-arg index="1" ref="orgQueryService"/>
+            </bean>
+            <bean class="io.atworkapi.appmarket.UserAppBundleResource">
+                <constructor-arg index="0" ref="bundleQueryService"/>
+            </bean>
+            <bean class="io.atworkapi.appmarket.UserAppMenuResource">
+                <constructor-arg index="0" ref="serveAppQueryService"/>
+            </bean>
+            <bean class="io.atworkapi.appmarket.UserAppFollowshipResource">
+                <constructor-arg index="0" ref="followshipService"/>
+                <constructor-arg index="1" ref="followshipQueryService"/>
+                <constructor-arg index="2" ref="serveAppQueryService"/>
+                <constructor-arg index="3" ref="taskService"/>
+                <constructor-arg index="4" ref="orgQueryService"/>
+            </bean>
+
+            <bean class="io.atworkapi.appmarket.AppResource" >
+                <constructor-arg index="0" ref="orgQueryService"/>
+                <constructor-arg index="1" ref="followshipQueryService"/>
+            </bean>
+            <bean class="io.atworkapi.appmarket.AppMboxResource" >
+                <constructor-arg index="0" ref="materialService"/>
+                <constructor-arg index="1" ref="planService"/>
+                <constructor-arg index="2" ref="orgQueryService"/>
+            </bean>
+            <bean class="io.atworkapi.appmarket.AppMaterialResource">
+                <constructor-arg index="0" ref="materialService"/>
+                <constructor-arg index="1" ref="materialQueryService" />
+            </bean>
+            <bean class="io.atworkapi.appmarket.AppMenuResource" >
+                <constructor-arg index="0" ref="serveAppService" />
+                <constructor-arg index="1" ref="serveAppQueryService" />
+            </bean>
+            <bean class="io.atworkapi.appmarket.AppPlanResource" >
+                <constructor-arg index="0" ref="planService" />
+                <constructor-arg index="1" ref="planQueryService" />
+            </bean>
+            <bean class="io.atworkapi.appmarket.AppRuleResource" >
+                <constructor-arg index="0" ref="serveRuleService" />
+                <constructor-arg index="1" ref="serveRuleQueryService" />
+            </bean>
+
+            <bean class="io.atworkapi.appmarket.CategoryResource">
+                <constructor-arg index="0" ref="categoryQueryService"/>
+            </bean>
+
+            <!-- organization -->
+            <bean class="io.atworkapi.organization.OrganizationResource">
+                <constructor-arg index="0" ref="orgQueryService"/>
+                <constructor-arg index="1" ref="orgOpsService"/>
+            </bean>
+            <bean class="io.atworkapi.organization.EmployeeResource">
+                <constructor-arg index="0" ref="orgQueryService"/>
+                <constructor-arg index="1" ref="orgOpsService"/>
+                <property name="captchaService" ref="captchaService"/>
+                <property name="notifyService" ref="notifyService"/>
+                <property name="employeeResetService" ref="employeeResetService"/>
+            </bean>
+            <bean class="io.atworkapi.organization.ContactResource">
+                <constructor-arg index="0" ref="contactService"/>
+            </bean>
+            <bean class="io.atworkapi.organization.UserContactResource">
+                <constructor-arg index="0" ref="contactService"/>
+            </bean>
+
+            <!-- feedback -->
+            <bean class="io.atworkapi.feedback.FeedbackResource">
+                <constructor-arg index="0" ref="feedbackService"/>
+            </bean>
+
+            <bean class="io.atworkapi.notify.CaptchaResource">
+                <constructor-arg index="0" ref="captchaService"/>
+            </bean>
+
+            <bean class="io.atworkapi.notify.NotifyResource">
+                <constructor-arg index="0" ref="notifyService"/>
+            </bean>
+
+            <bean class="io.atworkapi.release.UpgradeResource">
+                <constructor-arg index="0" ref="releaseService"/>
+                <constructor-arg index="1" ref="mediaService"/>
+                <constructor-arg index="2" ref="apiConfig"/>
+            </bean>
+
+            <bean class="io.atworkapi.release.WindowUpgradeResource">
+            <constructor-arg index="0" ref="releaseService"/>
+            <constructor-arg index="1" ref="mediaService"/>
+        </bean>
+        </jaxrs:serviceBeans>
+    </jaxrs:server>
+
+    <import resource="application-dubbo.xml"/>
+</beans>

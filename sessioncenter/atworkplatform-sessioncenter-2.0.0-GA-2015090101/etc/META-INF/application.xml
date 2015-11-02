@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <!-- service -->
+    <bean id="discoveryService" class="io.atworkplatform.sessioncenter.discovery.zookeeper.ZooDiscoveryService"
+          init-method="start"
+          destroy-method="stop">
+        <constructor-arg index="0" value="${registry.namespace}"/>
+        <constructor-arg index="1" value="${registry.zkservers}"/>
+    </bean>
+
+    <bean id="sessionRegistry" class="io.atworkplatform.sessioncenter.core.SessionRegistryImpl"/>
+
+    <bean id="sessionService" class="io.atworkplatform.sessioncenter.engine.SessionServiceImpl">
+        <constructor-arg index="0" ref="sessionRegistry"/>
+    </bean>
+
+    <bean class="io.atworkplatform.sessioncenter.transport.SessionTransportInitializer" depends-on="discoveryService"
+          init-method="init" destroy-method="destroy">
+        <constructor-arg index="0" ref="socketTransport"/>
+        <constructor-arg index="1" ref="discoveryService"/>
+    </bean>
+
+    <bean id="socketTransport" class="io.atworkplatform.sessioncenter.transport.socket.SocketTransport">
+        <constructor-arg index="0" ref="sessionRegistry"/>
+        <constructor-arg index="1">
+            <bean class="io.atworkplatform.sessioncenter.transport.SessionTransportConfig" >
+                <constructor-arg index="0" value="${transport.socket.access.endpoint}" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg index="2">
+            <bean class="io.atworkplatform.usercenter.sessioncenter.MyProtocolDirector">
+                <constructor-arg index="0" ref="deviceService"/>
+            </bean>
+        </constructor-arg>
+
+        <property name="messageHandlers">
+            <list>
+                <bean class="io.atworkplatform.usercenter.sessioncenter.MyChatMessageHandler">
+                    <constructor-arg index="0" ref="taskService"/>
+                </bean>
+
+                <bean class="io.atworkplatform.usercenter.sessioncenter.MyACKMessageHandler">
+                    <constructor-arg index="0" ref="taskService"/>
+                </bean>
+
+                <bean class="io.atwork.serveplatform.sessioncenter.ServeHandler">
+                    <constructor-arg index="0" ref="taskService"/>
+                </bean>
+            </list>
+        </property>
+        <property name="messageInterceptors">
+            <list>
+                <bean class="io.atworkplatform.usercenter.sessioncenter.MyMessageInterceptor"/>
+            </list>
+        </property>
+        <property name="sessionListener" ref="sessionListener"/>
+    </bean>
+
+    <bean class="io.atworkplatform.sessioncenter.transport.SessionTransportInitializer" depends-on="discoveryService"
+          init-method="init" destroy-method="destroy">
+        <constructor-arg index="0" ref="webSocketTransport"/>
+        <constructor-arg index="1" ref="discoveryService"/>
+    </bean>
+
+    <bean id="webSocketTransport" class="io.atworkplatform.sessioncenter.transport.websocket.WebSocketTransport">
+        <constructor-arg index="0" ref="sessionRegistry"/>
+        <constructor-arg index="1">
+            <bean class="io.atworkplatform.sessioncenter.transport.SessionTransportConfig" >
+                <constructor-arg index="0" value="${transport.websocket.access.endpoint}" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg index="2">
+            <bean class="io.atworkplatform.usercenter.sessioncenter.MyProtocolDirector">
+                <constructor-arg index="0" ref="deviceService"/>
+            </bean>
+        </constructor-arg>
+
+        <property name="messageHandlers">
+            <list>
+                <bean class="io.atworkplatform.usercenter.sessioncenter.MyChatMessageHandler">
+                    <constructor-arg index="0" ref="taskService"/>
+                </bean>
+
+                <bean class="io.atworkplatform.usercenter.sessioncenter.MyACKMessageHandler">
+                    <constructor-arg index="0" ref="taskService"/>
+                </bean>
+
+                <bean class="io.atwork.serveplatform.sessioncenter.ServeHandler">
+                    <constructor-arg index="0" ref="taskService"/>
+                </bean>
+            </list>
+        </property>
+        <property name="messageInterceptors">
+            <list>
+                <bean class="io.atworkplatform.usercenter.sessioncenter.MyMessageInterceptor"/>
+            </list>
+        </property>
+        <property name="sessionListener" ref="sessionListener"/>
+    </bean>
+
+    <!-- userListener -->
+    <bean id="sessionListener" class="io.atworkplatform.sessioncenter.spi.SessionListenerStream">
+        <constructor-arg index="0">
+            <list>
+                <bean class="io.atworkplatform.terminalcenter.sessioncenter.TerminalSessionListener">
+                    <constructor-arg index="0" ref="terminalService"/>
+                </bean>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>

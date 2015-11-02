@@ -1,0 +1,7 @@
+﻿可传入的参数
+
+docker build -t terminalcenter .
+
+docker run --env DUBBO_HOST=localhost --env DUBBO_PORT=30019 --env ZK_HOST=172.16.1.246 --env ZK_PORT=2181 --env RZ_HOST=172.16.1.246 --env ZK_PORT=2181 --env REDIS_HOST=172.16.1.248 --env REDIS_PORT=6379 --env MONGO_PORT=27017 --env MONGO_USER= --env MONG_PASS= --env MONGO_DBNAME=atwork-level --env MONGO_HOST=172.16.1.248 -d -P  terminalcenter 
+
+docker logs containterId

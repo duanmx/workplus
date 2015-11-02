@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <bean id="taskService" class="io.atworkplatform.schdcenter.engine.TaskServiceImpl">
+        <constructor-arg index="0" ref="taskOps"/>
+        <constructor-arg index="1">
+            <list>
+
+                <!-- usercenter -->
+                <bean class="io.atworkplatform.usercenter.schdcenter.PersonChatHandler">
+                    <constructor-arg index="0" ref="messageService"/>
+                    <constructor-arg index="1" ref="userConversationService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.DiscussionChatHandler">
+                    <constructor-arg index="0" ref="messageService"/>
+                    <constructor-arg index="1" ref="discussionService"/>
+                    <constructor-arg index="2" ref="userConversationService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.WriteAckHandler">
+                    <constructor-arg index="0" ref="sessionService"/>
+                    <constructor-arg index="1" ref="terminalService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.RecvAckHandler">
+                    <constructor-arg index="0" ref="messageService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.ReadAckHandler">
+                    <constructor-arg index="0" ref="messageService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.PostHandler">
+                    <constructor-arg index="0" ref="sessionService"/>
+                    <constructor-arg index="1" ref="terminalService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.DiscussionOpsHandler">
+                    <constructor-arg index="0" ref="messageService"/>
+                    <constructor-arg index="1" ref="discussionService"/>
+                    <constructor-arg index="2" ref="userService"/>
+                </bean>
+                <bean class="io.atworkplatform.apnscenter.schdcenter.ApnsHandler">
+                    <constructor-arg index="0" ref="apnsService"/>
+                    <constructor-arg index="1" ref="deviceService"/>
+                    <constructor-arg index="2" ref="messageQueryService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.ResetCredentialsHandler">
+                    <constructor-arg index="0" ref="sessionService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.UserRemovedHandler">
+                    <constructor-arg index="0" ref="sessionService"/>
+                    <constructor-arg index="1" ref="messageService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.UserProfileChangedHandler">
+                    <constructor-arg index="0" ref="sessionService"/>
+                    <constructor-arg index="1" ref="messageService"/>
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.DeviceCleanHandler" >
+                    <constructor-arg index="0" ref="deviceService" />
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.TokenCleanHandler" >
+                    <constructor-arg index="0" ref="tokenService" />
+                </bean>
+                <bean class="io.atworkplatform.usercenter.schdcenter.DeviceQuiesceHandler" >
+                    <constructor-arg index="0" ref="deviceService" />
+                </bean>
+                <!-- end usercenter -->
+
+                <!-- terminalcenter -->
+                <bean class="io.atworkplatform.terminalcenter.schdcenter.TerminalRejectHandler">
+                    <constructor-arg index="0" ref="sessionService"/>
+                </bean>
+                <bean class="io.atworkplatform.terminalcenter.schdcenter.TerminalQuiesceHandler">
+                    <constructor-arg index="0" ref="sessionService"/>
+                </bean>
+                <!-- end terminalcenter -->
+
+                <!-- organization -->
+                <bean class="io.atwork.organization.schdcenter.EmployeeFiredHandler">
+                    <constructor-arg index="0" ref="messageService"/>
+                </bean>
+                <!-- end orgnaization -->
+
+                <!-- serve platform -->
+                <bean class="io.atwork.serveplatform.schdcenter.SubscribedHandler" />
+                <bean class="io.atwork.serveplatform.schdcenter.Client2ServeAppHandler" >
+                    <constructor-arg index="0" ref="messageService" />
+                </bean>
+                <bean class="io.atwork.serveplatform.schdcenter.ServeApp2ClientHandler" >
+                    <constructor-arg index="0" ref="messageService" />
+                    <constructor-arg index="1" ref="servePlanService" />
+                </bean>
+                <bean class="io.atwork.serveplatform.schdcenter.ServeHandler" >
+                    <constructor-arg index="0" ref="serveService" />
+                    <constructor-arg index="1" ref="messageService" />
+                </bean>
+                <bean class="io.atwork.serveplatform.schdcenter.ServePlanHandler" >
+                    <constructor-arg index="0" ref="appQueryService" />
+                    <constructor-arg index="1" ref="servePlanService" />
+                    <constructor-arg index="2" ref="materialQueryService" />
+                    <constructor-arg index="3" ref="followshipQueryService" />
+                    <constructor-arg index="4" ref="orgQueryService" />
+                </bean>
+                <!-- end serveplatform -->
+
+            </list>
+        </constructor-arg>
+
+        <property name="taskListener" ref="taskListener"/>
+        <property name="taskExecutor">
+            <bean class="java.util.concurrent.ThreadPoolExecutor">
+                <constructor-arg index="0" value="${schedule.core.threads}"/>
+                <constructor-arg index="1" value="${schedule.max.threads}"/>
+                <constructor-arg index="2" value="30000"/>
+                <constructor-arg index="3">
+                    <value type="java.util.concurrent.TimeUnit">MILLISECONDS</value>
+                </constructor-arg>
+                <constructor-arg index="4">
+                    <bean class="java.util.concurrent.LinkedTransferQueue"/>
+                </constructor-arg>
+                <constructor-arg index="5">
+                    <bean class="java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy"/>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+    <!--userListener-->
+    <bean id="taskListener" class="io.atworkplatform.schdcenter.spi.event.TaskListenerStream">
+        <constructor-arg index="0">
+            <list>
+                <bean class="io.atworkplatform.schdcenter.spi.builtins.TaskStatusListener" />
+                <bean class="io.atworkplatform.schdcenter.spi.builtins.TaskTraceListener" />
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <bean id="taskOps" class="io.atworkplatform.schdcenter.impl.MongoTaskOperations">
+        <constructor-arg ref="mongoOps" index="0"/>
+    </bean>
+
+    <bean id="mongoOps" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg ref="mongoFactory"/>
+    </bean>
+
+    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" write-concern="${mongodb.write-concern}">
+        <mongo:options connections-per-host="${mongodb.options.connectionPerHost}"
+                       connect-timeout="${mongodb.options.connectionTimeout}"/>
+    </mongo:mongo>
+
+    <mongo:db-factory id="mongoFactory" mongo-ref="mongo" dbname="${mongodb.dbname}"
+                      username="${mongodb.username}" password="${mongodb.password}"/>
+    <mongo:mapping-converter id="mongoConverter" db-factory-ref="mongoFactory"/>
+
+    <!-- redis taskOps definition
+    <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory" >
+        <property name="hostName" value="${redis.host}" />
+        <property name="port" value="${redis.port}" />
+        <property name="password" value="${redis.password}" />
+        <property name="usePool" value="${redis.use-pool}" />
+    </bean>
+
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate" >
+        <property name="connectionFactory" ref="jedisConnectionFactory" />
+    </bean>
+
+    <bean id="taskOps" class="io.atworkplatform.schedulecenter.impl.RedistaskOps">
+        <constructor-arg index="0" ref="redisTemplate"/>
+    </bean>
+    -->
+    <!--import resource-->
+    <import resource="application-dubbo.xml"/>
+</beans>

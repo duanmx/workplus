@@ -1,0 +1,15 @@
+---
+tenants:
+    - id: atwork
+      name: atwork
+      email: atwork@foreverht.com
+      phone: 02012345678
+      website: http://www.foreverht.com
+
+tenant-admins:
+    - tenantId: atwork
+      username: atwork
+      password: atwork@2015
+
+
+

@@ -1,0 +1,2 @@
+docker run --env ZK_HOST=172.16.1.246 --env ZK_PORT=2181 --env MONGO_HOST=172.16.1.248 --env MONGO_PORT=27017 --env MONGO_USER= --env MONG_PASS= --env MYSQL_HOST=172.16.1.248 --env MYSQL_PORT=3306 --env MYSQL_USER=eim --env MYSQL_PASS=eim@wsx123 --env REDIS_HOST=172.16.1.248 --env REDIS_PORT=6379 -p 8080:8080  -i -t atwork-app
+

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/data/mongo
+           http://www.springframework.org/schema/data/mongo/spring-mongo.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <!-- service -->
+    <bean id="tenantService" class="io.atworkplatform.tenantcenter.engine.TenantServiceImpl">
+        <constructor-arg index="0" ref="tenantOps"/>
+        <constructor-arg index="1" ref="tenantAdminOps"/>
+        <property name="tenantCredentialsOps" ref="tenantCredentialsOps" />
+    </bean>
+
+    <bean id="tenantAdminService" class="io.atworkplatform.tenantcenter.engine.TenantAdminServiceImpl">
+        <constructor-arg index="0" ref="tenantOps"/>
+        <constructor-arg index="1" ref="tenantAdminOps"/>
+        <property name="tenantCredentialsOps" ref="tenantCredentialsOps" />
+    </bean>
+
+    <!-- operations -->
+    <bean id="tenantOps" class="io.atworkplatform.tenantcenter.impl.mongodb.MongoTenantOperations">
+        <constructor-arg index="0" ref="mongoOps"/>
+    </bean>
+
+    <bean id="tenantAdminOps" class="io.atworkplatform.tenantcenter.impl.mongodb.MongoTenantAdminOperations">
+        <constructor-arg index="0" ref="mongoOps"/>
+    </bean>
+
+    <bean id="tenantCredentialsOps" class="io.atworkplatform.tenantcenter.spi.MD5TenantCredentialsOperations" >
+        <property name="hashIterations" value="16" />
+    </bean>
+
+    <bean id="mongoOps" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg ref="mongoFactory"/>
+    </bean>
+
+    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" write-concern="${mongodb.write-concern}">
+        <mongo:options connections-per-host="${mongodb.options.connectionPerHost}"
+                       connect-timeout="${mongodb.options.connectionTimeout}"/>
+    </mongo:mongo>
+    <mongo:db-factory id="mongoFactory" mongo-ref="mongo" dbname="${mongodb.dbname}"
+                      username="${mongodb.username}" password="${mongodb.password}"/>
+    <mongo:mapping-converter id="mongoConverter" db-factory-ref="mongoFactory"/>
+
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>

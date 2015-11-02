@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+    <dubbo:application name="${dubbo.application}"/>
+    <dubbo:protocol name="${dubbo.protocol}" host="${dubbo.protocol.host}" port="${dubbo.protocol.port}"/>
+    <dubbo:registry address="${dubbo.registry}"/>
+
+    <dubbo:reference id="tokenService" interface="io.atworkplatform.tokencenter.api.TokenService" check="false" />
+    <dubbo:reference id="ticketService" interface="io.atworkplatform.tokencenter.api.TicketService" check="false" />
+
+    <dubbo:reference id="userService" interface="io.atworkplatform.usercenter.api.UserService" check="false" />
+    <dubbo:reference id="deviceService" interface="io.atworkplatform.usercenter.api.DeviceService" check="false" />
+    <dubbo:reference id="discussionService" interface="io.atworkplatform.usercenter.api.DiscussionService" check="false" timeout="30000" />
+    <dubbo:reference id="userConversationService" interface="io.atworkplatform.usercenter.api.UserConversationService" check="false" timeout="30000" />
+
+    <dubbo:reference id="taskService" interface="io.atworkplatform.schdcenter.api.TaskService" check="false" />
+
+    <dubbo:reference id="messageService" interface="io.atworkplatform.msgcenter.api.MessageService" check="false" />
+    <dubbo:reference id="messageQueryService" interface="io.atworkplatform.msgcenter.api.MessageQueryService" check="false" timeout="30000" />
+
+    <dubbo:reference id="tenantService" interface="io.atworkplatform.tenantcenter.api.TenantService" check="false" />
+    <dubbo:reference id="tenantAdminService" interface="io.atworkplatform.tenantcenter.api.TenantAdminService" check="false" />
+
+    <dubbo:reference id="contactService" interface="io.atwork.organization.api.ContactService" check="false" timeout="30000" />
+    <dubbo:reference id="orgOpsService" interface="io.atwork.organization.api.OrgOpsService" check="false" timeout="30000" />
+    <dubbo:reference id="orgQueryService" interface="io.atwork.organization.api.OrgQueryService" check="false" timeout="30000" />
+    <dubbo:reference id="employeeResetService" interface="io.atwork.organization.api.EmployeeResetService" check="false" timeout="30000" />
+
+    <dubbo:reference id="feedbackService" interface="io.atwork.clientcenter.api.FeedbackService" check="false" timeout="30000" />
+    <dubbo:reference id="captchaService" interface="io.atwork.clientcenter.notify.api.CaptchaService" check="false" timeout="30000" retries="1" />
+    <dubbo:reference id="notifyService" interface="io.atwork.clientcenter.notify.api.NotifyService" check="false" timeout="30000" retries="1" />
+
+    <dubbo:reference id="appService" interface="io.atwork.appmarket.api.AppService" check="false" retries="0" timeout="30000" />
+    <dubbo:reference id="appQueryService" interface="io.atwork.appmarket.api.AppQueryService" check="false" timeout="30000" />
+    <dubbo:reference id="bundleService" interface="io.atwork.appmarket.api.BundleService" check="false" retries="0" timeout="30000" />
+    <dubbo:reference id="bundleQueryService" interface="io.atwork.appmarket.api.BundleQueryService" check="false" timeout="30000" />
+    <dubbo:reference id="categoryQueryService" interface="io.atwork.appmarket.api.CategoryQueryService" check="false" timeout="30000" />
+    <dubbo:reference id="followshipService" interface="io.atwork.appmarket.api.FollowshipService" check="false" retries="0" timeout="30000" />
+    <dubbo:reference id="followshipQueryService" interface="io.atwork.appmarket.api.FollowshipQueryService" check="false" timeout="30000" />
+
+    <dubbo:reference interface="io.atwork.serveplatform.api.ServeService" id="serveService" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.ServeAppService" id="serveAppService" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.ServeAppQueryService" id="serveAppQueryService" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.ServePlanService" id="planService" check="false" />
+    <dubbo:reference interface="io.atwork.serveplatform.api.ServePlanQueryService" id="planQueryService" check="false" />
+    <dubbo:reference interface="io.atwork.serveplatform.api.RuleService" id="serveRuleService" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.RuleQueryService" id="serveRuleQueryService" check="false"/>
+
+    <dubbo:reference interface="io.atwork.serveplatform.api.ArticleQueryService" id="articleQueryService" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.MaterialService" id="materialService" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.MaterialQueryService" id="materialQueryService" check="false"/>
+
+    <dubbo:reference interface="io.atwork.serveplatform.api.StarMsgService" id="starMsgService" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.StarMsgQueryService" id="starMsgQueryService" check="false"/>
+
+    <dubbo:reference id="releaseService" interface="io.atwork.clientcenter.api.ReleaseService" check="false" timeout="30000" />
+    <dubbo:reference id="logService" interface="io.atwork.clientcenter.api.LogService" check="false" timeout="30000" />
+
+    <dubbo:reference id="mediaTransformerService" interface="io.atwork.media.transformer.api.MediaTransformerService" check="false" timeout="30000" />
+</beans>

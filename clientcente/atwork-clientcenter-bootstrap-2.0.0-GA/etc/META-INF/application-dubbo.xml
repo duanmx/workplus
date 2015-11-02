@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+    <dubbo:application name="${app.dubbo.application}"/>
+    <dubbo:protocol name="${app.dubbo.protocol}" host="${app.dubbo.protocol.host}" port="${app.dubbo.protocol.port}"/>
+    <dubbo:registry address="${app.dubbo.registry}"/>
+
+    <dubbo:service interface="io.atwork.clientcenter.api.FeedbackService" ref="feedbackService"/>
+
+    <dubbo:service interface="io.atwork.clientcenter.api.ReleaseService" ref="releaseService"/>
+
+    <dubbo:service interface="io.atwork.clientcenter.notify.api.CaptchaService" ref="captchaService"/>
+
+    <dubbo:service interface="io.atwork.clientcenter.notify.api.NotifyService" ref="notifyService"/>
+
+    <dubbo:service interface="io.atwork.clientcenter.api.LogService" ref="logService"/>
+</beans>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/data/mongo
+           http://www.springframework.org/schema/data/mongo/spring-mongo.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <bean id="messageService" class="io.atworkplatform.msgcenter.engine.MessageServiceImpl">
+        <constructor-arg index="0" ref="envelopOps"/>
+    </bean>
+
+    <bean id="messageQueryService" class="io.atworkplatform.msgcenter.engine.MessageQueryServiceImpl">
+        <constructor-arg index="0" ref="envelopOps"/>
+    </bean>
+
+    <bean id="envelopOps" class="io.atworkplatform.msgcenter.impl.MongoEnvelopOperations">
+        <constructor-arg ref="mongoTemplate" index="0"/>
+    </bean>
+
+    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" write-concern="${mongodb.write-concern}">
+        <mongo:options connections-per-host="${mongodb.options.connectionPerHost}"
+                       connect-timeout="${mongodb.options.connectionTimeout}"/>
+    </mongo:mongo>
+    <mongo:db-factory id="mongoFactory" mongo-ref="mongo" dbname="${mongodb.dbname}"
+                      username="${mongodb.username}" password="${mongodb.password}"/>
+
+    <bean id="mongoConverter" class="org.springframework.data.mongodb.core.convert.MappingMongoConverter">
+        <constructor-arg index="0" ref="mongoFactory"/>
+        <constructor-arg index="1">
+            <bean class="org.springframework.data.mongodb.core.mapping.MongoMappingContext"/>
+        </constructor-arg>
+        <property name="mapKeyDotReplacement" value="\$"/>
+    </bean>
+
+    <!--<mongo:mapping-converter id="mongoConverter" db-factory-ref="mongoFactory" />-->
+
+    <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg ref="mongoFactory"/>
+        <constructor-arg ref="mongoConverter"/>
+    </bean>
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>

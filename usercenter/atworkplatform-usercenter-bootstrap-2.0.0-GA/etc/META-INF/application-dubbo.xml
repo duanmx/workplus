@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+    <dubbo:application name="${dubbo.application}"/>
+    <dubbo:protocol name="${dubbo.protocol}" host="${dubbo.protocol.host}" port="${dubbo.protocol.port}"/>
+    <dubbo:registry address="${dubbo.registry}"/>
+
+    <dubbo:service interface="io.atworkplatform.usercenter.api.UserService" ref="userService"/>
+    <dubbo:service interface="io.atworkplatform.usercenter.api.DeviceService" ref="deviceService"/>
+    <dubbo:service interface="io.atworkplatform.usercenter.api.DiscussionService" ref="discussionService"/>
+    <dubbo:service interface="io.atworkplatform.usercenter.api.UserConversationService" ref="userConversationService"/>
+
+    <dubbo:reference id="taskService" interface="io.atworkplatform.schdcenter.api.TaskService" check="false"/>
+    <dubbo:reference id="terminalService" interface="io.atworkplatform.terminalcenter.api.TerminalService" check="false"/>
+    <dubbo:reference id="messageService" interface="io.atworkplatform.msgcenter.api.MessageService" check="false"/>
+</beans>

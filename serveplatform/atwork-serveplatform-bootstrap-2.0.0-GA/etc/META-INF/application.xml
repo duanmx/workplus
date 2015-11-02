@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+    <context:property-placeholder location="classpath*:*.properties" ignore-unresolvable="true"/>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <aop:aspectj-autoproxy/>
+
+    <bean id="em" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="packagesToScan" value="io.atwork.serveplatform.domain"/>
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+                <property name="database" value="${jdbc.dialet}"/>
+                <property name="showSql" value="${jdbc.showSql}"/>
+            </bean>
+        </property>
+
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.hbm2ddl.auto">${jdbc.ddl}</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="em"/>
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
+        <property name="driverClass" value="${jdbc.driver}"/>
+        <property name="jdbcUrl" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="maxConnectionsPerPartition" value="50"/>
+    </bean>
+
+    <bean id="articleQueryService" class="io.atwork.serveplatform.engine.ArticleQueryServiceImpl" />
+
+    <bean id="materialQueryService" class="io.atwork.serveplatform.engine.MaterialQueryServiceImpl"/>
+    <bean id="materialService" class="io.atwork.serveplatform.engine.MaterialServiceImpl">
+        <constructor-arg index="0" ref="materialOps"/>
+    </bean>
+
+    <bean id="serveService" class="io.atwork.serveplatform.engine.ServeServiceImpl" >
+        <constructor-arg index="0" ref="ruleOps" />
+        <constructor-arg index="1" ref="serveAppOps" />
+        <property name="ruleProcessors">
+            <list>
+                <bean class="io.atwork.serveplatform.spi.rule.builtins.SubscribedRuleProcessor" />
+                <bean class="io.atwork.serveplatform.spi.rule.builtins.KeywordRuleProcessor" />
+                <bean class="io.atwork.serveplatform.spi.rule.builtins.DefaultsRuleProcessor" />
+                <bean class="io.atwork.serveplatform.spi.rule.builtins.ExchangeRuleProcessor" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="serveAppQueryService" class="io.atwork.serveplatform.engine.ServeAppQueryServiceImpl"/>
+    <bean id="serveAppService" class="io.atwork.serveplatform.engine.ServeAppServiceImpl">
+        <constructor-arg index="0" ref="serveAppOps"/>
+    </bean>
+
+    <bean id="serveRuleQueryService" class="io.atwork.serveplatform.engine.RuleQueryServiceImpl"/>
+
+    <bean id="serveRuleService" class="io.atwork.serveplatform.engine.RuleServiceImpl">
+        <constructor-arg index="0" ref="ruleOps"/>
+        <constructor-arg index="1" ref="materialOps"/>
+    </bean>
+
+    <bean id="serveAppOps" class="io.atwork.serveplatform.impl.jpa.JpaServeAppOperations"/>
+    <bean id="ruleOps" class="io.atwork.serveplatform.impl.jpa.JpaRuleOperations"/>
+    <bean id="planOps" class="io.atwork.serveplatform.impl.jpa.JpaServePlanOperations"/>
+    <bean id="materialOps" class="io.atwork.serveplatform.impl.jpa.JpaMaterialOperations"/>
+    <bean id="starOps" class="io.atwork.serveplatform.impl.jpa.JpaStarMsgOperations"/>
+
+    <bean id="planService" class="io.atwork.serveplatform.engine.ServePlanServiceImpl">
+        <constructor-arg index="0" ref="planOps" />
+        <property name="planListener">
+            <bean class="io.atwork.serveplatform.spi.event.ServePlanListenerStream">
+                <constructor-arg index="0">
+                    <list>
+                        <bean class="io.atwork.serveplatform.spi.builtins.ServePlanSubmittedListener">
+                            <constructor-arg index="0" ref="taskService" />
+                        </bean>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+    <bean id="planQueryService" class="io.atwork.serveplatform.engine.ServePlanQueryServiceImpl" />
+
+    <bean id="starMsgService" class="io.atwork.serveplatform.engine.StarMsgServiceImpl">
+        <constructor-arg index="0" ref="starOps" />
+    </bean>
+
+    <bean id="starMsgQueryService" class="io.atwork.serveplatform.engine.StarMsgQueryServiceImpl" />
+
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+    <dubbo:application name="${dubbo.application}"  />
+    <dubbo:protocol name="${dubbo.protocol}" host="${dubbo.protocol.host}" port="${dubbo.protocol.port}" />
+    <dubbo:registry address="${dubbo.registry}" />
+    <dubbo:service interface="io.atworkplatform.schdcenter.api.TaskService" ref="taskService" />
+
+    <!-- msgcenter -->
+    <dubbo:reference id="messageService" interface="io.atworkplatform.msgcenter.api.MessageService" retries="0" timeout="30000" check="false" />
+    <dubbo:reference id="messageQueryService" interface="io.atworkplatform.msgcenter.api.MessageQueryService" retries="0" timeout="10000" check="false" lazy="true" />
+
+    <!-- usercenter -->
+    <dubbo:reference id="userService" interface="io.atworkplatform.usercenter.api.UserService" retries="0" timeout="10000" check="false" lazy="true" />
+    <dubbo:reference id="deviceService" interface="io.atworkplatform.usercenter.api.DeviceService" retries="0" timeout="10000" check="false" lazy="true"  />
+    <dubbo:reference id="discussionService" interface="io.atworkplatform.usercenter.api.DiscussionService" retries="0" timeout="10000" check="false" lazy="true" />
+    <dubbo:reference id="userConversationService" interface="io.atworkplatform.usercenter.api.UserConversationService" retries="0" timeout="10000" check="false" lazy="true" />
+
+    <!-- tokencenter -->
+    <dubbo:reference id="tokenService" interface="io.atworkplatform.tokencenter.api.TokenService" retries="0" timeout="3000" check="false" lazy="true" />
+
+    <!-- terminalcenter -->
+    <dubbo:reference id="terminalService" interface="io.atworkplatform.terminalcenter.api.TerminalService" check="false" lazy="true" />
+
+    <!-- apnscenter -->
+    <dubbo:reference id="apnsService" interface="io.atworkplatform.apnscenter.api.ApnsService" check="false" lazy="true" />
+
+    <!-- sessioncenter -->
+    <dubbo:reference id="sessionService" interface="io.atworkplatform.sessioncenter.api.SessionService" check="false" lazy="true" />
+
+    <!-- appmarket center -->
+    <dubbo:reference id="appService" interface="io.atwork.appmarket.api.AppService" retries="0" check="false" lazy="true" />
+    <dubbo:reference id="appQueryService" interface="io.atwork.appmarket.api.AppQueryService" check="false" lazy="true" />
+    <dubbo:reference id="bundleService" interface="io.atwork.appmarket.api.BundleService" retries="0" check="false" lazy="true" />
+    <dubbo:reference id="bundleQueryService" interface="io.atwork.appmarket.api.BundleQueryService" check="false" lazy="true" />
+    <dubbo:reference id="categoryService" interface="io.atwork.appmarket.api.CategoryService" retries="0" check="false" lazy="true" />
+    <dubbo:reference id="categoryQueryService" interface="io.atwork.appmarket.api.CategoryQueryService" check="false" lazy="true" />
+    <dubbo:reference id="followshipService" interface="io.atwork.appmarket.api.FollowshipService" check="false" lazy="true" />
+    <dubbo:reference id="followshipQueryService" interface="io.atwork.appmarket.api.FollowshipQueryService" check="false" lazy="true" />
+
+    <!-- serveplatform -->
+    <dubbo:reference id="serveService" interface="io.atwork.serveplatform.api.ServeService" retries="0" check="false" timeout="60000" lazy="true" />
+    <dubbo:reference id="serveAppService" interface="io.atwork.serveplatform.api.ServeAppService" retries="0" check="false" lazy="true" />
+    <dubbo:reference id="serveAppQueryService" interface="io.atwork.serveplatform.api.ServeAppQueryService" check="false" lazy="true" />
+    <dubbo:reference id="servePlanService" interface="io.atwork.serveplatform.api.ServePlanService" retries="0" timeout="30000" check="false" lazy="true" />
+    <dubbo:reference id="servePlanQueryService" interface="io.atwork.serveplatform.api.ServePlanQueryService" timeout="30000" check="false" lazy="true" />
+    <dubbo:reference interface="io.atwork.serveplatform.api.MaterialService" id="materialService" retries="0" check="false"/>
+    <dubbo:reference interface="io.atwork.serveplatform.api.MaterialQueryService" id="materialQueryService" retries="0" check="false"/>
+
+    <!-- orgnaztion -->
+    <dubbo:reference id="orgOpsService" interface="io.atwork.organization.api.OrgOpsService" retries="0" check="false" timeout="60000" />
+    <dubbo:reference id="orgQueryService" interface="io.atwork.organization.api.OrgQueryService" retries="0" check="false" timeout="120000" />
+</beans>

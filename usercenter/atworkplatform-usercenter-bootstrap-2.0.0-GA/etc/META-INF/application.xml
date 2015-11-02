@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+       xmlns:ldap="http://www.springframework.org/schema/ldap"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/data/mongo
+           http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+           http://www.springframework.org/schema/ldap
+           http://www.springframework.org/schema/ldap/spring-ldap.xsd">
+
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <!-- service -->
+    <bean id="mediaService" class="io.atworkplatform.mediastorage.engine.MediaServiceImpl">
+        <constructor-arg index="0" ref="mediaOps"/>
+    </bean>
+
+    <bean id="deviceService" class="io.atworkplatform.usercenter.engine.DeviceServiceImpl">
+        <constructor-arg index="0" ref="deviceOps"/>
+        <property name="deviceListener">
+            <bean class="io.atworkplatform.usercenter.spi.event.DeviceListenerStream">
+                <constructor-arg index="0">
+                    <list>
+                        <bean class="io.atworkplatform.usercenter.spi.builtins.DeviceCleanListener" >
+                            <constructor-arg index="0" ref="taskService" />
+                        </bean>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="userService" class="io.atworkplatform.usercenter.engine.UserServiceImpl">
+        <constructor-arg index="0" ref="userOps"/>
+        <property name="userListener">
+            <bean class="io.atworkplatform.usercenter.spi.event.UserListenerStream">
+                <constructor-arg index="0">
+                    <list>
+                        <bean class="io.atworkplatform.usercenter.spi.builtins.DiscussionCleanListener">
+                            <constructor-arg index="0" ref="discussionService"/>
+                        </bean>
+                        <bean class="io.atworkplatform.usercenter.spi.builtins.ResetCredentialsListener">
+                            <constructor-arg index="0" ref="taskService"/>
+                            <constructor-arg index="1" ref="terminalService"/>
+                        </bean>
+                        <bean class="io.atworkplatform.usercenter.spi.builtins.UserRemovedListener">
+                            <constructor-arg index="0" ref="taskService"/>
+                            <constructor-arg index="1" ref="terminalService"/>
+                        </bean>
+                        <!--<bean class="io.atworkplatform.usercenter.spi.builtins.UserProfileChangedListener">-->
+                            <!--<constructor-arg index="0" ref="taskService"/>-->
+                            <!--<constructor-arg index="1" ref="terminalService"/>-->
+                        <!--</bean>-->
+                        <!--<bean class="io.atworkplatform.usercenter.spi.builtins.UserAvatarChangedListener">-->
+                            <!--<constructor-arg index="0" ref="discussionService"/>-->
+                        <!--</bean>-->
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+        <property name="userCredentialsOps" ref="userCredentialsOps" />
+    </bean>
+
+    <bean id="discussionService" class="io.atworkplatform.usercenter.engine.DiscussionServiceImpl">
+        <constructor-arg index="0" ref="userOps"/>
+        <constructor-arg index="1" ref="discussionOps"/>
+        <constructor-arg index="2" ref="mediaService"/>
+        <property name="discussionListener">
+            <bean class="io.atworkplatform.usercenter.spi.event.DiscussionListenerStream">
+                <constructor-arg index="0">
+                    <list>
+                        <bean class="io.atworkplatform.usercenter.spi.builtins.DiscussionOpsListener">
+                            <constructor-arg index="0" ref="taskService"/>
+                        </bean>
+                        <bean class="io.atworkplatform.usercenter.spi.builtins.DiscussionAvatarListener">
+                            <constructor-arg index="0" ref="discussionService"/>
+                        </bean>
+                        <bean class="io.atworkplatform.usercenter.spi.builtins.DiscussionMessageCleanListener">
+                            <constructor-arg index="0" ref="messageService"/>
+                        </bean>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="userConversationService" class="io.atworkplatform.usercenter.engine.UserConversationServiceImpl">
+        <constructor-arg index="0" ref="userConversationOps"/>
+    </bean>
+
+    <!-- operations -->
+    <bean id="deviceOps" class="io.atworkplatform.usercenter.impl.mongodb.MongoDeviceOperations">
+        <constructor-arg index="0" ref="mongoOps"/>
+    </bean>
+
+    <bean id="userOps" class="io.atworkplatform.usercenter.impl.mongodb.MongoUserOperations">
+        <constructor-arg index="0" ref="mongoOps"/>
+    </bean>
+
+    <bean id="userConversationOps" class="io.atworkplatform.usercenter.impl.mongodb.MongoUserConversationOperations">
+        <constructor-arg index="0" ref="mongoOps"/>
+    </bean>
+
+    <bean id="userCredentialsOps" class="io.atworkplatform.usercenter.spi.MD5UserCredentialsOperations">
+        <property name="hashIterations" value="16" />
+    </bean>
+
+    <bean id="ldapUserCredentialsOperations" class="io.atworkplatform.usercenter.impl.ldap.LdapUserCredentialsOperations" >
+        <constructor-arg index="0" ref="ldapConfig" />
+        <constructor-arg index="1" ref="ldapTemplate" />
+    </bean>
+
+    <bean id="cimcLdapUserCredentialsOps" class="io.atworkplatform.usercenter.impl.cimcldap.CimcLdapUserCredentialsOperations">
+        <property name="userCredentialsOpss">
+            <list>
+                <ref bean="ldapUserCredentialsOperations"/>
+                <ref bean="userCredentialsOps" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="ldapConfig" class="io.atworkplatform.usercenter.impl.ldap.LdapConfig" />
+
+    <ldap:context-source url="${ldap.url}" base="${ldap.base}" username="${ldap.username}" password="${ldap.password}" />
+    <ldap:ldap-template id="ldapTemplate" />
+
+    <bean id="discussionOps" class="io.atworkplatform.usercenter.impl.mongodb.MongoDiscussionOperations">
+        <constructor-arg index="0" ref="mongoOps"/>
+    </bean>
+
+    <bean id="mediaOps" class="io.atworkplatform.mediastorage.impl.GridFsMediaOperations">
+        <constructor-arg index="0" ref="gridFsOps"/>
+    </bean>
+
+    <!--mongo-->
+    <bean id="gridFsOps" class="org.springframework.data.mongodb.gridfs.GridFsTemplate">
+        <constructor-arg ref="mongoFactory"/>
+        <constructor-arg ref="mongoConverter"/>
+    </bean>
+
+    <bean id="mongoOps" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg ref="mongoFactory"/>
+    </bean>
+
+    <mongo:mongo id="mongo" host="${mongodb.host}" port="${mongodb.port}" write-concern="${mongodb.write-concern}">
+        <mongo:options connections-per-host="${mongodb.options.connectionPerHost}"
+                       connect-timeout="${mongodb.options.connectionTimeout}"/>
+    </mongo:mongo>
+    <mongo:db-factory id="mongoFactory" mongo-ref="mongo" dbname="${mongodb.dbname}"
+                      username="${mongodb.username}" password="${mongodb.password}"/>
+    <mongo:mapping-converter id="mongoConverter" db-factory-ref="mongoFactory"/>
+
+    <!-- import resource -->
+    <import resource="application-dubbo.xml"/>
+</beans>
