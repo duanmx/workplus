@@ -1,6 +1,6 @@
 
 FROM java:8-jre
-FROM mjava:8-jre
+#FROM mjava:8-jre
 MAINTAINER duanmx duanmxcode@sina.com
 
 ENV APP_NAME atworkapi-bootstrap-2.0.0-GA-2015091503
