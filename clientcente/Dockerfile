@@ -11,7 +11,7 @@ COPY . $WORK_HOME
 WORKDIR $WORK_HOME
 RUN apt-get update
 RUN apt-get install file -y
-RUN tar zxvf $APP_NAME.tar.gz
+#RUN tar zxvf $APP_NAME.tar.gz
 RUN cp $WORK_HOME/$CONFIG_NAME $WORK_HOME/$APP_NAME/etc
 
 CMD ["/bin/bash","/usr/clientcenter/start.sh"]
